@@ -1,5 +1,5 @@
 %% @private
--module(test).
+-module(test_kterl).
 
 -include("kterl.hrl").
 

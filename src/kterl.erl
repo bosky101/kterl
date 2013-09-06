@@ -59,7 +59,7 @@
 -type kt_bin_kv_list()   :: [kt_bin_kv()].
 -type kt_call_kvl()      :: kt_kv_list() | dict().
 -type kt_exptime()       :: non_neg_integer() | calendar:datetime().
--type kt_client()        :: pid().
+-type kt_client()        :: atom() | pid().
 -type kt_cursor()        :: #kterl_cursor{cursor_id :: non_neg_integer(), 
                                           client_pid :: pid()}.
 -type kt_database()      :: non_neg_integer() | string() | binary().
@@ -107,10 +107,17 @@ start_link() ->
     {ok,pid()} | {error, term()}.
     
 start_link(Args) ->
+    io:format("~n into start_link with args ~p",[Args]),
     Host = proplists:get_value(host, Args, "127.0.0.1"),
     Port = proplists:get_value(port, Args, 1978),
     ReconnectSleep = proplists:get_value(reconnect_sleep, Args, 100),
-    start_link(Host, Port, ReconnectSleep).
+    Name = proplists:get_value(name, Args),
+    case Name of 
+	undefined ->
+	    start_link(Host, Port, ReconnectSleep);
+	_ ->
+	    start_link(Name, Host, Port, ReconnectSleep)
+    end.
 
 
 %% @doc Connects to Host : Port with a connection retry interval of 
@@ -122,9 +129,17 @@ start_link(Args) ->
         ReconnectSleep :: non_neg_integer()) ->
     {ok, pid()} | {error, term()}.
 
-start_link(Host, Port, ReconnectSleep) 
+start_link(Host, Port, ReconnectSleep) ->
+    start_link(undefined, Host, Port, ReconnectSleep).
+
+start_link(Name, Host, Port, ReconnectSleep) 
   when is_list(Host), is_integer(Port), is_integer(ReconnectSleep) ->
-    kterl_client:start_link(Host, Port, ReconnectSleep).
+    Pid = kterl_client:start_link(Name, Host, Port, ReconnectSleep),
+    io:format("~n started kterl_client:start_link/4 to give pid ~p",[Pid]),
+    Pid;
+start_link(Name, Host, Port, ReconnectSleep) ->
+    io:format("~n Don't know how to start with ~p,~p,~p,~p",[Name, Host, Port, ReconnectSleep]).
+
 
 
 %% @doc Gracefully closes the tcp connection and stops the gen_server 
@@ -2059,6 +2074,7 @@ arg_ukvl(KVL) -> [build_ukv(KV) || KV <- kvl(KVL)].
 
 -spec client_pid(pid() | kt_client() | kt_cursor()) -> pid().
 
+client_pid(PidName) when is_atom(PidName) -> erlang:whereis(PidName);
 client_pid(Pid) when is_pid(Pid) -> Pid;
 client_pid(#kterl_cursor{client_pid = Pid}) -> client_pid(Pid).
 

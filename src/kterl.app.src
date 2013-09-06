@@ -3,6 +3,10 @@
   {description, "Erlang Kyoto Tycoon client"},
   {vsn, "1.0.0"},
   {registered, []},
+  {modules,[
+	  kterl_app,kterl,kterl_binrec,kterl_client,kterl_request,
+          kterl_response,kterl_result,kterl_tests,kterl_util
+  ]},
   {applications, [
                   kernel,
                   stdlib

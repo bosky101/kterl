@@ -52,7 +52,7 @@
 -include("kterl.hrl").
 -include("ktinternal.hrl").
 
--export([start_link/3, stop/1, get_cursor/1, local_stats/1, 
+-export([start_link/3, start_link/4, stop/1, get_cursor/1, local_stats/1, 
          http_request/4, bin_request/2, garbage_collect/1, configure/2]).
 
 %%
@@ -90,7 +90,11 @@
     {ok, Pid::pid()} | {error, Reason::term()}.
 
 start_link(Host, Port, ReconnectSleep) ->
-    gen_server:start_link(?MODULE, [Host, Port, ReconnectSleep], []).
+    start_link(undefined, Host, Port, ReconnectSleep).
+start_link(undefined, Host, Port, ReconnectSleep)->
+    gen_server:start_link(?MODULE, [Host, Port, ReconnectSleep], []);
+start_link(Name, Host, Port, ReconnectSleep) ->
+    gen_server:start_link({local,Name}, ?MODULE, [Host, Port, ReconnectSleep], []).
 
 
 -spec stop(Pid::pid()) -> ok.
@@ -168,8 +172,10 @@ handle_call(garbage_collect, _From, State) ->
     {reply, erlang:garbage_collect(), State};
 
 handle_call({configure, ConfArgs}, _From, State) ->
-    {reply, ok, apply_config(ConfArgs, State)}.
+    {reply, ok, apply_config(ConfArgs, State)};
 
+handle_call(Unknown, _From, State)->
+    {reply, {error,unexpected}, State}.
 
 handle_cast(_Msg, State) ->
     {noreply, State}.
